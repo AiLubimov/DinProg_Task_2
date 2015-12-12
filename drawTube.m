@@ -1,0 +1,73 @@
+function drawTube(T, EllCenCA, EllMatCA, basisMat, mode, A_t)
+    
+    N_Ell = 100;
+   
+    if isempty(mode)
+        error('[drawTube] Empty mode.');
+    end
+    
+    ConvHullCA = cell(numel(T), 1);
+    n_dir = size(EllCenCA, 2);
+    n_dim = size(basisMat, 1);
+    
+    if strcmp(mode, 'dynamic')
+        [~, e_1] =ode45(@(t, l) -A_t(t)' * l, T, reshape(basisMat(:, 1), [n_dim 1]));
+        [~, e_2] =ode45(@(t, l) -A_t(t)' * l, T, reshape(basisMat(:, 2), [n_dim 1]));
+        e_1 = normr(e_1);
+        e_2 = normr(e_2);
+        bM = @(n) [e_1(n, :)' e_2(n, :)']; 
+        P = @(n) bM(n) * inv(bM(n)' * bM(n)) * bM(n)';
+    else
+        if strcmp(mode, 'static'), P = @(n) basisMat * inv(basisMat' * basisMat) * basisMat'; else
+            error('[drawTube] Wrong mode.');
+        end
+    end
+    
+    for k = 1 : numel(T)
+        X = zeros(n_dim, n_dir * N_Ell);
+        Pr_Mat = P(k);
+        for i = 1 : n_dir
+            EllCen = Pr_Mat * EllCenCA{k, i};
+            EllMat = Pr_Mat * EllMatCA{k, i} * Pr_Mat';
+        
+            X(:, (i - 1) * N_Ell + 1 : i * N_Ell) = getEllipsoidPoints(EllCen, EllMat, N_Ell, basisMat);    
+            %x = EllCen + EllMat * L_0(:, i) / dot(L_0(:, i), EllMat * L_0(:, i)) ^ 0.5;
+        end
+        X = linsolve(basisMat, X);
+        ind = convhull(X(1, :)', X(2, :)');
+        X = [X(1, ind); X(2, ind)];
+        ConvHullCA{k} = X;
+    end
+
+    max = 0;
+
+    for i = 1 : numel(ConvHullCA)
+        if max < size(ConvHullCA{i}, 2)
+            max = size(ConvHullCA{i}, 2);
+        end
+    end
+
+    for i = 1 : numel(ConvHullCA)
+        convHull = ConvHullCA{i};
+        if size(convHull, 2) < max
+            convHull = [interp1(linspace(0, 1, size(convHull,2)), convHull(1, :), linspace(0, 1, max));
+            interp1(linspace(0, 1, size(convHull,2)), convHull(2, :), linspace(0, 1, max))];
+        end
+        ConvHullCA{i} = convHull;
+        plot3(convHull(1,:),convHull(2,:), T(i)*ones(1,max));
+    end
+    figure
+    Z = zeros(max, numel(T));
+    X = zeros(max, numel(T));
+    Y = zeros(max, numel(T));
+
+    for i = 1 : numel(T) 
+        convHull = ConvHullCA{i};
+        X(:, i) = convHull(1, :);
+        Y(:, i) = convHull(2, :);
+        Z(:, i) = T(i) * ones(max, 1);
+    end
+    
+    surf(X, Y, Z,'FaceAlpha', 0.5, 'EdgeColor', 'none')
+end
+
