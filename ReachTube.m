@@ -55,7 +55,7 @@ E = eye(n_dim);
 if abs(lamt) > eps
     
     v_2 = P_b_s * l;
-    v_1 = lamt * sqrtm(X_0) * l_0; 
+    v_1 = sqrtm(X_0) * l_0; 
 
     nv_1 = v_1 / norm(v_1);
     nv_2 = v_2 / norm(v_2);
@@ -77,6 +77,7 @@ end
 %--------------------------------------
     
 dl = -At' * l;
+dl = dl / norm(dl);
 dq_ = At * q_ + Bt * pt;
 dQs = S * P_b_s + Qs * At';
 

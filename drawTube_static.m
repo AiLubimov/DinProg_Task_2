@@ -2,25 +2,25 @@ function drawTube_static(T, EllCenCA, EllMatCA, basisMat)
 
     P = basisMat * inv(basisMat' * basisMat) * basisMat';
     ConvHullCA = cell(numel(T), 1);
-    %DirCA = cell(numel(T), 1);
-    %DirArr = zeros(n_dir, 2);
     n_dir = size(EllCenCA, 2);
+    n_dim = size(basisMat, 1);
+    
+    N_Ell = 100;
+   
     
     for k = 1 : numel(T)
-        X = [];
+        X = zeros(n_dim, n_dir * N_Ell);
         for i = 1 : n_dir
             EllCen = P * EllCenCA{k, i};
             EllMat = P * EllMatCA{k, i} * P';
         
-            X = [X getEllipsoidPoints(EllCen, EllMat, 100)];
-        
-            ind = convhull(X(1, :)', X(2, :)');
-            X = [X(1, ind); X(2, ind)];
+            X(:, (i - 1) * N_Ell + 1 : i * N_Ell) = getEllipsoidPoints(EllCen, EllMat, N_Ell, basisMat);    
             %x = EllCen + EllMat * L_0(:, i) / dot(L_0(:, i), EllMat * L_0(:, i)) ^ 0.5;
-            %DirArr(i, :) = x;
         end
+        X = linsolve(basisMat, X);
+        ind = convhull(X(1, :)', X(2, :)');
+        X = [X(1, ind); X(2, ind)];
         ConvHullCA{k} = X;
-        %DirCA{k} = DirArr;
     end
 
     max = 0;
@@ -38,8 +38,9 @@ function drawTube_static(T, EllCenCA, EllMatCA, basisMat)
             interp1(linspace(0, 1, size(convHull,2)), convHull(2, :), linspace(0, 1, max))];
         end
         ConvHullCA{i} = convHull;
+        plot3(convHull(1,:),convHull(2,:), T(i)*ones(1,max));
     end
-
+    figure
     Z = zeros(max, numel(T));
     X = zeros(max, numel(T));
     Y = zeros(max, numel(T));
@@ -50,8 +51,7 @@ function drawTube_static(T, EllCenCA, EllMatCA, basisMat)
         Y(:, i) = convHull(2, :);
         Z(:, i) = T(i) * ones(max, 1);
     end
-
-    surf(X, Y, Z, 'EdgeColor', 'none', 'FaceAlpha', 0.5)
-
+    
+    surf(X, Y, Z,'FaceAlpha', 0.5, 'EdgeColor', 'none')
 end
 
