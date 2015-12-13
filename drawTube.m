@@ -36,7 +36,7 @@ function drawTube(T, EllCenCA, EllMatCA, basisMat, mode, A_t)
         X = linsolve(basisMat, X);
         ind = convhull(X(1, :)', X(2, :)');
         X = [X(1, ind); X(2, ind)];
-        ConvHullCA{k} = X;
+        ConvHullCA{k} = X(:, 1 : end - 1);
     end
 
     max = 0;
@@ -53,21 +53,29 @@ function drawTube(T, EllCenCA, EllMatCA, basisMat, mode, A_t)
             convHull = [interp1(linspace(0, 1, size(convHull,2)), convHull(1, :), linspace(0, 1, max));
             interp1(linspace(0, 1, size(convHull,2)), convHull(2, :), linspace(0, 1, max))];
         end
+        %[~, I] = min(atan2(convHull(1, :), convHull(2, :)));
+        [~, I] = min(convHull(1, :));
+        convHull = circshift(convHull, [0 -I + 1]);
+        convHull = [convHull convHull(:, 1)];
         ConvHullCA{i} = convHull;
-        plot3(convHull(1,:),convHull(2,:), T(i)*ones(1,max));
+        plot3(convHull(1,:),convHull(2,:), T(i) * ones(max + 1, 1));
     end
+    
     figure
-    Z = zeros(max, numel(T));
-    X = zeros(max, numel(T));
-    Y = zeros(max, numel(T));
+    Z = zeros(max + 1, numel(T));
+    X = zeros(max + 1, numel(T));
+    Y = zeros(max + 1, numel(T));
 
     for i = 1 : numel(T) 
         convHull = ConvHullCA{i};
         X(:, i) = convHull(1, :);
         Y(:, i) = convHull(2, :);
-        Z(:, i) = T(i) * ones(max, 1);
+        Z(:, i) = T(i) * ones(max + 1, 1);
     end
     
-    surf(X, Y, Z,'FaceAlpha', 0.5, 'EdgeColor', 'none')
+    surf(X, Y, Z, 'FaceAlpha', 0.5, 'EdgeColor', 'none', 'FaceColor', 'red');
+    xlabel('t');
+    ylabel('x');
+    zlabel('y');
 end
 
