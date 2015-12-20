@@ -57,10 +57,8 @@ function dy = odefun(t, y)
         s = sqrt(1 - (c^2 - 10^(-15)));
         q_1 = nv_1;
         
-        if abs(s) > eps
-            q_2 = (nv_2 - c * nv_1) / s;
-        else
-            q_2 = zeros(n_dim, 1);
+        if abs(s) > eps, q_2 = (nv_2 - c * nv_1) / s;
+        else             q_2 = zeros(n_dim, 1);
         end
 
         Q_1 = [q_1 q_2];
@@ -74,7 +72,7 @@ function dy = odefun(t, y)
     dl = -At' * l;
     dl = dl / norm(dl);
     dq_ = At * q_ + Bt * pt;
-    dQs = S * P_b_s + Qs * At';
+    dQs =  Qs * At' + S * P_b_s;
 
     dy = [dl; dq_; reshape(dQs, [n_dim * n_dim, 1])];
 end
